@@ -31,7 +31,7 @@ This creates an SVG file in the `posters/` directory.
 
 ### Import into Fusion 360:
 
-1. Open Fusion 360
+1. Open Fusion
 2. Create a new design
 3. Go to **Insert** → **Insert SVG**
 4. Select your generated SVG file
@@ -105,9 +105,9 @@ Files are saved to `posters/` directory with format:
 {city}_{theme}_{YYYYMMDD_HHMMSS}.svg
 ```
 
-## Fusion 360 Import Settings
+## Fusion Import Settings
 
-When importing SVG into Fusion 360:
+When importing SVG into Fusion:
 
 1. **Units**: Check that units match (the SVG uses points, scale as needed)
 2. **Origin**: Place at origin (0,0) for easier manipulation
