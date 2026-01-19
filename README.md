@@ -1,6 +1,6 @@
-# City Map Poster Generator - Fusion 360 / 3D Printing Edition
+# Creating City Maps to svg which can be edited in Fusion and ready for 3d printing
 
-Generate beautiful, minimalist map posters for any city and export them as **SVG files** ready for import into Fusion 360 for 3D printing.
+Generate beautiful, minimalist map posters for any city and export them as **SVG files** ready for import into Fusion for 3D printing.
 
 ## Features
 
