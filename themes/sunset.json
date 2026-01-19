@@ -1,0 +1,16 @@
+{
+  "name": "Sunset",
+  "description": "Warm oranges and pinks",
+  "bg": "#FFE5CC",
+  "text": "#8B4513",
+  "gradient_color": "#FFE5CC",
+  "water": "#FFCC99",
+  "parks": "#FFDBB3",
+  "coastline": "#FF4500",
+  "road_motorway": "#FF4500",
+  "road_primary": "#FF6347",
+  "road_secondary": "#FF7F50",
+  "road_tertiary": "#FFA07A",
+  "road_residential": "#FFB69B",
+  "road_default": "#FFA07A"
+}
