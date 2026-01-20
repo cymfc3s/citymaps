@@ -62,6 +62,8 @@ def get_default_theme() -> dict:
         "water": "#C0C0C0",
         "parks": "#F0F0F0",
         "coastline": "#000000",
+        "river": "#4A90E2",
+        "creek": "#6BA3D6",
         "road_motorway": "#0A0A0A",
         "road_primary": "#1A1A1A",
         "road_secondary": "#2A2A2A",
@@ -154,6 +156,23 @@ def create_poster(city: str, country: str = None, theme_name: str = "feature_bas
     # Convert to GeoDataFrame
     nodes, edges = ox.graph_to_gdfs(G)
     
+    # Also fetch major highways explicitly to ensure they're included
+    # (some highways might be filtered out by OSMnx's network_type='drive')
+    print("Fetching major highways (motorways, trunks, primary roads)...")
+    major_highways = None
+    try:
+        major_highways = ox.features_from_point(point, tags={
+            'highway': ['motorway', 'motorway_link', 'trunk', 'trunk_link', 
+                       'primary', 'primary_link']
+        }, dist=distance)
+        if major_highways.empty:
+            major_highways = None
+        else:
+            print(f"  Found {len(major_highways)} major highway segments")
+    except Exception as e:
+        print(f"  Major highways fetch error: {e}")
+        major_highways = None
+    
     # Fetch water bodies
     print("Fetching water bodies...")
     try:
@@ -167,6 +186,18 @@ def create_poster(city: str, country: str = None, theme_name: str = "feature_bas
         parks = ox.features_from_point(point, tags={'leisure': 'park'}, dist=distance)
     except:
         parks = None
+    
+    # Fetch rivers and creeks (waterways)
+    print("Fetching rivers and creeks...")
+    waterways = None
+    try:
+        # Fetch all waterways: rivers, streams, creeks, canals, etc.
+        waterways = ox.features_from_point(point, tags={'waterway': True}, dist=distance)
+        if waterways.empty:
+            waterways = None
+    except Exception as e:
+        print(f"  Waterway fetch error: {e}")
+        waterways = None
     
     # Fetch coastline/boundary
     print("Fetching coastline/boundary...")
@@ -271,9 +302,83 @@ def create_poster(city: str, country: str = None, theme_name: str = "feature_bas
                         ax.plot(x_coords, y_coords, color=coastline_color, linewidth=2.5, 
                                solid_capstyle='round', zorder=2.5)
     
+    # Plot rivers and creeks
+    if waterways is not None and not waterways.empty:
+        print("Rendering rivers and creeks...")
+        river_color = theme.get('river', '#4A90E2')
+        creek_color = theme.get('creek', '#6BA3D6')
+        
+        for idx, feature in waterways.iterrows():
+            geom = feature.geometry
+            waterway_type = feature.get('waterway', 'stream')
+            
+            # Determine color and width based on waterway type
+            if waterway_type in ['river', 'riverbank']:
+                color = river_color
+                width = 1.5
+            elif waterway_type in ['stream', 'brook', 'creek']:
+                color = creek_color
+                width = 0.8
+            elif waterway_type == 'canal':
+                color = river_color
+                width = 1.2
+            else:
+                color = creek_color
+                width = 0.6
+            
+            if geom is not None:
+                if geom.geom_type == 'LineString':
+                    coords = list(geom.coords)
+                    x_coords = [coord[0] for coord in coords]
+                    y_coords = [coord[1] for coord in coords]
+                    ax.plot(x_coords, y_coords, color=color, linewidth=width, 
+                           solid_capstyle='round', zorder=2.7)
+                elif geom.geom_type == 'MultiLineString':
+                    for line in geom.geoms:
+                        coords = list(line.coords)
+                        x_coords = [coord[0] for coord in coords]
+                        y_coords = [coord[1] for coord in coords]
+                        ax.plot(x_coords, y_coords, color=color, linewidth=width, 
+                               solid_capstyle='round', zorder=2.7)
+    
     # Get edge colors and widths
     edge_colors = get_edge_colors_by_type(edges, theme)
     edge_widths = get_edge_widths_by_type(edges)
+    
+    # Plot major highways first (so they appear under regular roads but are still visible)
+    if major_highways is not None and not major_highways.empty:
+        print("Rendering major highways...")
+        for idx, hw in major_highways.iterrows():
+            geom = hw.geometry
+            if geom is not None:
+                hw_type = hw.get('highway', 'primary')
+                if isinstance(hw_type, list):
+                    hw_type = hw_type[0] if hw_type else 'primary'
+                
+                # Determine color and width based on highway type
+                if 'motorway' in str(hw_type):
+                    color = theme['road_motorway']
+                    width = 1.5  # Slightly thicker than regular motorways
+                elif hw_type in ['trunk', 'trunk_link']:
+                    color = theme['road_primary']
+                    width = 1.3
+                else:  # primary, primary_link
+                    color = theme['road_primary']
+                    width = 1.2
+                
+                if geom.geom_type == 'LineString':
+                    coords = list(geom.coords)
+                    x_coords = [coord[0] for coord in coords]
+                    y_coords = [coord[1] for coord in coords]
+                    ax.plot(x_coords, y_coords, color=color, linewidth=width, 
+                           solid_capstyle='round', zorder=2.9)
+                elif geom.geom_type == 'MultiLineString':
+                    for line in geom.geoms:
+                        coords = list(line.coords)
+                        x_coords = [coord[0] for coord in coords]
+                        y_coords = [coord[1] for coord in coords]
+                        ax.plot(x_coords, y_coords, color=color, linewidth=width, 
+                               solid_capstyle='round', zorder=2.9)
     
     # Plot roads
     print("Rendering roads...")
@@ -344,13 +449,13 @@ def create_poster(city: str, country: str = None, theme_name: str = "feature_bas
         output_file = POSTERS_DIR / f"{city_safe}_{theme_safe}_{timestamp}.svg"
         plt.savefig(output_file, format='svg', bbox_inches='tight', 
                    facecolor=theme['bg'], edgecolor='none', dpi=dpi)
-        print(f"\n✓ SVG saved: {output_file}")
+        print(f"\n[OK] SVG saved: {output_file}")
         print(f"  Import this file into Fusion 360 as a sketch to extrude for 3D printing")
     else:
         output_file = POSTERS_DIR / f"{city_safe}_{theme_safe}_{timestamp}.png"
         plt.savefig(output_file, format='png', bbox_inches='tight', 
                    facecolor=theme['bg'], edgecolor='none', dpi=dpi)
-        print(f"\n✓ PNG saved: {output_file}")
+        print(f"\n[OK] PNG saved: {output_file}")
     
     plt.close()
     

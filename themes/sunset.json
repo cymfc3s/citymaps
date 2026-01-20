@@ -7,6 +7,8 @@
   "water": "#FFCC99",
   "parks": "#FFDBB3",
   "coastline": "#FF4500",
+  "river": "#FF6347",
+  "creek": "#FF7F50",
   "road_motorway": "#FF4500",
   "road_primary": "#FF6347",
   "road_secondary": "#FF7F50",
